@@ -44,7 +44,8 @@ london_co = {
     },
 }
 
-name = input('Введите имя устройства: ')
-keys = str(list(london_co[f'{name}'].keys())).strip('([])').replace('\'', '')
-parameter = input('Введите имя параметра (' f'{keys}' '): ').lower()
-print(london_co[f'{name}'].get(f'{parameter}', 'Такого параметра нет'))
+device = input("Введите имя устройства: ")
+params = ", ".join(london_co[device].keys())
+parameter = str.lower(input(f"Введите имя параметра ({params}): "))
+
+print(london_co[device].get(parameter, "Такого параметра нет"))

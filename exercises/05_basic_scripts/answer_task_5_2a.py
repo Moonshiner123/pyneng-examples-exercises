@@ -42,30 +42,47 @@ bin_ip = "00001010000000010000000111000011"
 
 """
 
-question = input('Введите IP-адрес/маску (например: 10.1.1.0/24): ')
-ip = question[:question.find('/')]
-mask = question[question.find('/'):].strip('/')
+network = input("Введите адрес сети: ")
 
-ip_list = ip.split('.')
-bin_ip = f'{int(ip_list[0]):08b}' f'{int(ip_list[1]):08b}' f'{int(ip_list[2]):08b}' f'{int(ip_list[3]):08b}'
-bin_ip_net = bin_ip[:int(mask)] + '0'*(32-int(mask))
-i1=bin_ip_net[0:8]
-i2=bin_ip_net[8:16]
-i3=bin_ip_net[16:24]
-i4=bin_ip_net[24:]
+ip, mask = network.split("/")
+ip_list = ip.split(".")
+mask = int(mask)
 
-bin_mask = '1'*int(mask)+'0'*(32-int(mask))
-m1=bin_mask[0:8]
-m2=bin_mask[8:16]
-m3=bin_mask[16:24]
-m4=bin_mask[24:]
+oct1, oct2, oct3, oct4 = [
+    int(ip_list[0]),
+    int(ip_list[1]),
+    int(ip_list[2]),
+    int(ip_list[3]),
+]
+bin_ip_str = "{:08b}{:08b}{:08b}{:08b}".format(oct1, oct2, oct3, oct4)
+bin_network_str = bin_ip_str[:mask] + "0" * (32 - mask)
 
+net1, net2, net3, net4 = [
+    int(bin_network_str[0:8], 2),
+    int(bin_network_str[8:16], 2),
+    int(bin_network_str[16:24], 2),
+    int(bin_network_str[24:32], 2),
+]
 
-print(f'''\nNetwork:
-{int(i1, 2):<8} {int(i2, 2):<8} {int(i3 ,2):<8} {int(i4, 2):<8}
-{i1:<8} {i2:<8} {i3:<8} {i4:<8}''')
+bin_mask = "1" * mask + "0" * (32 - mask)
+m1, m2, m3, m4 = [
+    int(bin_mask[0:8], 2),
+    int(bin_mask[8:16], 2),
+    int(bin_mask[16:24], 2),
+    int(bin_mask[24:32], 2),
+]
 
-print(f'''\nMask:
-/{mask}
-{int(m1, 2):<8} {int(m2, 2):<8} {int(m3, 2):<8} {int(m4, 2):<8}
-{m1:<8} {m2:<8} {m3:<8} {m4:<8}''') 
+ip_output = """
+Network:
+{0:<8}  {1:<8}  {2:<8}  {3:<8}
+{0:08b}  {1:08b}  {2:08b}  {3:08b}"""
+
+mask_output = """
+Mask:
+/{0}
+{1:<8}  {2:<8}  {3:<8}  {4:<8}
+{1:08b}  {2:08b}  {3:08b}  {4:08b}
+"""
+
+print(ip_output.format(net1, net2, net3, net4))
+print(mask_output.format(mask, m1, m2, m3, m4))

@@ -26,26 +26,12 @@ trunk_template = [
     "switchport trunk allowed vlan {}",
 ]
 
+template = {"access": access_template, "trunk": trunk_template}
+question = {"access": "Введите номер VLAN: ", "trunk": "Введите разрешенные VLANы: "}
 
-access_template = ['switchport mode access',
-                   'switchport access vlan {}',
-                   'switchport nonegotiate',
-                   'spanning-tree portfast',
-                   'spanning-tree bpduguard enable']
-				   
-trunk_template = [
-    "switchport trunk encapsulation dot1q", 
-	"switchport mode trunk",
-    "switchport trunk allowed vlan {}"]
+mode = input("Введите режим работы интерфейса (access/trunk): ")
+interface = input("Введите тип и номер интерфейса: ")
+vlans = input(question[mode])
 
-
-dict_template = {'access': {'template': '\n'.join(access_template), 'question': 'Введите номер VLAN: '}, 
-                'trunk': {'template': '\n'.join(trunk_template), 'question': 'Введите разрешенные VLANы: '}}
-
-mode = input('Введите режим работы интерфейса (access/trunk): ')
-interface = input('Введите тип и номер интерфейса: ')
-vlan = input(dict_template[f'{mode}']['question'])
-
-print('\n' + '-' * 30)
-print(f'interface {interface}')
-print(dict_template[f'{mode}']['template'].format(vlan))
+print("interface {}".format(interface))
+print("\n".join(template[mode]).format(vlans))

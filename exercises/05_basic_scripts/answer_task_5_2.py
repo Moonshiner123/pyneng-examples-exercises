@@ -25,22 +25,38 @@ Out[1]: '11111111111111111111111111110000'
 Ограничение: Все задания надо выполнять используя только пройденные темы.
 """
 
-question = input("Введите IP-адрес/маску (например: 10.1.1.0/24): ")
-ip = question[:question.find('/')]
-mask = question[question.find('/'):].strip('/')
-ip_list = ip.split('.')
-bin_mask = '1'*int(mask)+'0'*(32-int(mask))
-m1=bin_mask[0:8]
-m2=bin_mask[8:16]
-m3=bin_mask[16:24]
-m4=bin_mask[24:]
+network = input("Введите адрес сети: ")
 
+ip, mask = network.split("/")
+ip_list = ip.split(".")
+mask = int(mask)
 
-print(f'''\nNetwork:
-{ip_list[0]:<8} {ip_list[1]:<8} {ip_list[2]:<8} {ip_list[3]:<8}
-{int(ip_list[0]):08b} {int(ip_list[1]):08b} {int(ip_list[2]):08b} {int(ip_list[3]):08b}''')
+oct1, oct2, oct3, oct4 = [
+    int(ip_list[0]),
+    int(ip_list[1]),
+    int(ip_list[2]),
+    int(ip_list[3]),
+]
 
-print(f'''\nMask:
-/{mask}
-{int(m1, 2):<8} {int(m2, 2):<8} {int(m3, 2):<8} {int(m4, 2):<8}
-{m1:<8} {m2:<8} {m3:<8} {m4:<8}''') 
+bin_mask = "1" * mask + "0" * (32 - mask)
+m1, m2, m3, m4 = [
+    int(bin_mask[0:8], 2),
+    int(bin_mask[8:16], 2),
+    int(bin_mask[16:24], 2),
+    int(bin_mask[24:32], 2),
+]
+
+ip_output = """
+Network:
+{0:<8}  {1:<8}  {2:<8}  {3:<8}
+{0:08b}  {1:08b}  {2:08b}  {3:08b}"""
+
+mask_output = """
+Mask:
+/{0}
+{1:<8}  {2:<8}  {3:<8}  {4:<8}
+{1:08b}  {2:08b}  {3:08b}  {4:08b}
+"""
+
+print(ip_output.format(oct1, oct2, oct3, oct4))
+print(mask_output.format(mask, m1, m2, m3, m4))
