@@ -16,4 +16,32 @@ Enter VLAN number: 10
 
 Ограничение: Все задания надо выполнять используя только пройденные темы.
 
-"""
+""" 
+
+vlan=int(input("Введите номер VLAN: "))
+
+'''
+listoflists=[]
+
+with open(f"CAM_table.txt", "r") as file:
+    for line in file:
+        line=line.split()
+        if line and line[0][0].isdigit():
+            sublist=[int(line[0]), line[1], line[3]]
+            listoflists.append(sublist)
+            
+sorted_list=sorted(listoflists)
+reverse_sorted_list=sorted_list[::-1]
+
+
+for i in reverse_sorted_list:
+    if vlan in i:
+        print(f'{i[0]:<10} {i[1]:<20} {i[2]}')
+
+'''
+
+with open(f"CAM_table.txt", "r") as file:
+    for line in file:
+        line=line.split()
+        if line and line[0].isdigit() and int(line[0])==vlan:
+            print(f'{line[0]:10} {line[1]:20} {line[3]:10}')

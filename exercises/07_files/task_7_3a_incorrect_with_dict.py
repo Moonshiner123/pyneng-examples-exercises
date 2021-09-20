@@ -23,18 +23,28 @@
 Ограничение: Все задания надо выполнять используя только пройденные темы.
 
 """
-listoflists=[]
+dictionary={}
 
 with open(f"CAM_table.txt", "r") as file:
     for line in file:
         line=line.split()
         if line and line[0][0].isdigit():
-            sublist=[int(line[0]), line[1], line[3]]
-            listoflists.append(sublist)
-            
-sorted_list=sorted(listoflists)
+            vlan=int(line[0])
+            mac=line[1]
+            port=line[3]
+            dictionary[vlan]={}
+            dictionary[vlan]['mac']=mac
+            dictionary[vlan]['port']=port
 
-for line in sorted_list:
-    print(f'{line[0]:<10} {line[1]:<20} {line[2]}')
+sorted_dictionary_list=sorted(dictionary)
+#print(dictionary)
+#print(sorted_dictionary_list)
 
+for i in sorted_dictionary_list:
+    #Fuck! Have to play with those damn single and double quotes for a while!
+    #Behavior differs with and without f-string.
+    #print(i)
+    #print(dictionary[i]['mac'])
+    #print(dictionary[i]['port'])
+    print(f'{i:<10} {dictionary[i]["mac"]:<20}  {dictionary[i]["port"]}')
 

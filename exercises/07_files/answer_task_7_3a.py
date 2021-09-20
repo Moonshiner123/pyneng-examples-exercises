@@ -23,18 +23,14 @@
 Ограничение: Все задания надо выполнять используя только пройденные темы.
 
 """
-listoflists=[]
+mac_table = []
 
-with open(f"CAM_table.txt", "r") as file:
-    for line in file:
-        line=line.split()
-        if line and line[0][0].isdigit():
-            sublist=[int(line[0]), line[1], line[3]]
-            listoflists.append(sublist)
-            
-sorted_list=sorted(listoflists)
+with open("CAM_table.txt", "r") as conf:
+    for line in conf:
+        words = line.split()
+        if words and words[0].isdigit():
+            vlan, mac, _, intf = words
+            mac_table.append([int(vlan), mac, intf])
 
-for line in sorted_list:
-    print(f'{line[0]:<10} {line[1]:<20} {line[2]}')
-
-
+for vlan, mac, intf in sorted(mac_table):
+    print(f"{vlan:<9}{mac:20}{intf}")
