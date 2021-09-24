@@ -44,25 +44,16 @@ port_security_template = [
 
 access_config = {"FastEthernet0/12": 10, "FastEthernet0/14": 11, "FastEthernet0/16": 17}
 
-
 def generate_access_config(intf_vlan_mapping, access_template, psecurity=None):
-    '''
-    My second fucking function
-    '''
-    config=[]
+    access_config = []
+
     for intf, vlan in intf_vlan_mapping.items():
-        config.append(f'interface {intf}')
+        access_config.append(f"interface {intf}")
         for command in access_template:
-            if command.endswith('access vlan'):
-                config.append(f'{command} {vlan}')
+            if command.endswith("access vlan"):
+                access_config.append(f"{command} {vlan}")
             else:
-                config.append(f'{command}')
+                access_config.append(command)
         if psecurity:
-                config.extend(psecurity)
-
-    return config
-
-
-print(generate_access_config(access_config, access_mode_template))
-print('#'*40)
-print(generate_access_config(access_config, access_mode_template, port_security_template))
+            access_config.extend(psecurity)
+    return access_config
