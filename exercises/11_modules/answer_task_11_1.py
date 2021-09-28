@@ -43,20 +43,17 @@ def parse_cdp_neighbors(command_output):
     и с файлами и с выводом с оборудования.
     Плюс учимся работать с таким выводом.
     """
-    
-    topology={}
-    command_output=command_output.split('\n')
-    for line in command_output:
-        if 'show cdp neighbors' in line:
-            lcl_dev=line.split('>')[0]
-        elif 'S I' in line:
-            rmt_dev, lcl_int_type, lcl_int_num, *_, rmt_int_type, rmt_int_num = line.split()
-            lcl_int=f'{lcl_int_type}{lcl_int_num}'
-            rmt_int=f'{rmt_int_type}{rmt_int_num}'
-            topology[(lcl_dev, lcl_int)] = (rmt_dev, rmt_int)
-    return topology
-
-
+    result = {}
+    for line in command_output.split("\n"):
+        line = line.strip()
+        columns = line.split()
+        if ">" in line:
+            hostname = line.split(">")[0]
+        # 3 индекс это столбец holdtime - там всегда число
+        elif len(columns) >= 5 and columns[3].isdigit():
+            r_host, l_int, l_int_num, *other, r_int, r_int_num = columns
+            result[(hostname, l_int + l_int_num)] = (r_host, r_int + r_int_num)
+    return result
 
 
 if __name__ == "__main__":
