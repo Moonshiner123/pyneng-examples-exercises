@@ -87,7 +87,11 @@ from pprint import pprint
 
 topology = create_network_map(infiles)
 
+"""
 def unique_network_map(topology_dict):
+
+    #This is my first variant
+
     unique_topology=topology_dict.copy() 
     
     for key, value in topology_dict.items():
@@ -99,7 +103,18 @@ def unique_network_map(topology_dict):
         if topology_dict[key] == '':
             del unique_topology[key]
     return unique_topology
+"""
 
+def unique_network_map(topology_dict):
+    """
+    #Second variant - after looking in answers with one eye
+    """
+    unique_topology = {}
+    for key, value in topology_dict.items():
+        if not unique_topology.get(value)==key:
+                unique_topology[key]=value
+    return unique_topology
+                
 if __name__ == "__main__":
     #pprint(unique_network_map(topology))
     draw_topology(unique_network_map(topology))
