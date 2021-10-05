@@ -34,45 +34,24 @@
  '172.21.41.129', '172.21.41.130', '172.21.41.131', '172.21.41.132']
 
 """
-
 import ipaddress
 
-def check_if_ip_is_address(ip_address):
-    try:
-        ipaddress.ip_address(ip_address)
-        return True
-    except ValueError:
-        return False
 
-def convert_ranges_to_ip_list(ip_ranges):
-    expanded_range=[]
-    for ip in ip_ranges:
-        if check_if_ip_is_address(ip):
-            expanded_range.append(ip)
-        elif not check_if_ip_is_address(ip) and len(ip.split('-')[-1]) <= 3:
-            ip1=ip.split('-')[0]
-            diff = int(ip.split('-')[-1]) - int(ip1.split('.')[-1])
-            for i in range(diff+1):
-                ip1=ipaddress.ip_address(ip1)
-                expanded_range.append(str(ip1))
-                ip1+=1
-        elif not check_if_ip_is_address(ip) and check_if_ip_is_address(ip.split('-')[-1]):
-            ip1=ip.split('-')[0]
-            ip2=ip.split('-')[1]
-            diff = int(ip2.split('.')[-1]) - int(ip1.split('.')[-1])
-            for i in range(diff+1):
-                ip1=ipaddress.ip_address(ip1)
-                expanded_range.append(str(ip1))
-                ip1+=1
-    return expanded_range
-    
-    
+def convert_ranges_to_ip_list(ip_addresses):
+    ip_list = []
+    for ip_address in ip_addresses:
+        if "-" in ip_address:
+            start_ip, stop_ip = ip_address.split("-")
+            if "." not in stop_ip:
+                stop_ip = ".".join(start_ip.split(".")[:-1] + [stop_ip])
+            start_ip = ipaddress.ip_address(start_ip)
+            stop_ip = ipaddress.ip_address(stop_ip)
+            for ip in range(int(start_ip), int(stop_ip) + 1):
+                ip_list.append(str(ipaddress.ip_address(ip)))
+        else:
+            ip_list.append(str(ip_address))
+    return ip_list
+
 if __name__ == "__main__":
     print(convert_ranges_to_ip_list(['8.8.4.4', '1.1.1.1-3', '172.21.41.128-172.21.41.132']))
-                
-                
-                
-                
-                
-                
                 
