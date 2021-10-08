@@ -23,36 +23,11 @@
 а не ввод пользователя.
 
 """
-
 import re
 
-'''
-def get_ip_from_cfg(cfg_file):
-    with open(cfg_file, 'r') as f:
-        ipmask_list = []
-        ipmask_tuple = tuple()
-        for line in f:
-            match = re.search(r'ip address (?P<ip>\S+) (?P<mask>\S+)', line)
-            if match:
-                ip = match.group('ip')
-                mask = match.group('mask')
-                ipmask_tuple = (ip, mask)
-                ipmask_list.append(ipmask_tuple)
-    return ipmask_list
 
-'''
-
-regex = r'ip address (?P<ip>\S+) (?P<mask>\S+)'
-
-def get_ip_from_cfg(cfg_file):
-    with open(cfg_file, 'r') as f:
-        ipmask_list=[match.groups() for match in re.finditer(regex, f.read())]
-    return ipmask_list            
-
-
-
-if __name__ == "__main__":
-    print(get_ip_from_cfg('config_r1.txt'))
-
-
-
+def get_ip_from_cfg(config):
+    regex = r"ip address (\S+) (\S+)"
+    with open(config) as f:
+        result = [m.groups() for m in re.finditer(regex, f.read())]
+    return result
