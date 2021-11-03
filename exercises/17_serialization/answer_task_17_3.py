@@ -24,23 +24,23 @@ R6           Fa 0/2          143           R S I           2811       Fa 0/0
 
 Проверить работу функции на содержимом файла sh_cdp_n_sw1.txt
 """
-
-import glob
 import re
-from pprint import pprint
 
 
-def parse_sh_cdp_neighbors(input_string):
-    cdp_dict = {}
-    ldevice = re.search(r'(?P<ldevice>\S+)[>#]', input_string).group('ldevice')
-    cdp_dict[ldevice] = {}
-    
-    regex = (r'(?P<rdevice>\S+) +(?P<lintf>\S+ \d+/\d+) .*?(?P<rintf>\S+ \d+/\d+)')
-    match = re.finditer(regex, input_string)
-    for m in match:
-        cdp_dict[ldevice][m.group('lintf')] = {m.group('rdevice'): m.group('rintf')}
-    return cdp_dict
-    
+def parse_sh_cdp_neighbors(command_output):
+    regex = re.compile(
+        r"(?P<r_dev>\w+)  +(?P<l_intf>\S+ \S+)"
+        r"  +\d+  +[\w ]+  +\S+ +(?P<r_intf>\S+ \S+)"
+    )
+    connect_dict = {}
+    l_dev = re.search(r"(\S+)[>#]", command_output).group(1)
+    connect_dict[l_dev] = {}
+    for match in regex.finditer(command_output):
+        r_dev, l_intf, r_intf = match.group("r_dev", "l_intf", "r_intf")
+        connect_dict[l_dev][l_intf] = {r_dev: r_intf}
+    return connect_dict
+
+
 if __name__ == "__main__":
-    test_input_string = open('sh_cdp_n_sw1.txt').read()
-    print(parse_sh_cdp_neighbors(test_input_string))
+    with open("sh_cdp_n_sw1.txt") as f:
+        print(parse_sh_cdp_neighbors(f.read()))
