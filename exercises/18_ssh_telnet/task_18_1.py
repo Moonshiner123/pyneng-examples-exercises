@@ -17,14 +17,23 @@
 с помощью функции send_show_command (эта часть кода написана).
 
 """
+from pprint import pprint
 import yaml
+from netmiko import  ConnectHandler
 
+
+def send_show_command(device,command):
+    with ConnectHandler(**device) as ssh:
+        ssh.enable()
+        output = ssh.send_command(command)
+    return output
 
 
 if __name__ == "__main__":
     command = "sh ip int br"
     with open("devices.yaml") as f:
         devices = yaml.safe_load(f)
+        pprint(devices)
 
     for dev in devices:
         print(send_show_command(dev, command))

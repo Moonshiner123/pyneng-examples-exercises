@@ -36,37 +36,22 @@
 в файл topology.yaml. Он понадобится в следующем задании.
 
 """
-import glob
-import re
-from pprint import pprint
 import yaml
+import glob
+from task_17_3 import parse_sh_cdp_neighbors
 
 
-def parse_sh_cdp_neighbors(input_string):
-    cdp_dict = {}
-    ldevice = re.search(r'(?P<ldevice>\S+)[>#]', input_string).group('ldevice')
-    cdp_dict[ldevice] = {}
-    
-    regex = (r'(?P<rdevice>\S+) +(?P<lintf>\S+ \d+/\d+) .*?(?P<rintf>\S+ \d+/\d+)')
-    match = re.finditer(regex, input_string)
-    for m in match:
-        cdp_dict[ldevice][m.group('lintf')] = {m.group('rdevice'): m.group('rintf')}
-    return cdp_dict
-
-
-def generate_topology_from_cdp(list_of_files, save_to_filename = None):
+def generate_topology_from_cdp(list_of_files, save_to_filename=None):
     topology = {}
     for filename in list_of_files:
         with open(filename) as f:
             topology.update(parse_sh_cdp_neighbors(f.read()))
     if save_to_filename:
-        with open(save_to_filename, 'w') as y:
-                yaml.dump(topology, y, default_flow_style=False)
+        with open(save_to_filename, "w") as f_out:
+            yaml.dump(topology, f_out, default_flow_style=False)
     return topology
 
 
 if __name__ == "__main__":
-    input_list = ['sh_cdp_n_sw1.txt', 'sh_cdp_n_r1.txt', 'sh_cdp_n_r2.txt', 'sh_cdp_n_r3.txt', 'sh_cdp_n_r4.txt', 'sh_cdp_n_r5.txt', 'sh_cdp_n_r6.txt']
-    pprint(generate_topology_from_cdp(input_list, save_to_filename = 'topology.yaml'))
-    with open('topology.yaml') as f:
-        print(f.read())
+    f_list = glob.glob("sh_cdp_n_*")
+    print(generate_topology_from_cdp(f_list, save_to_filename="topology.yaml"))

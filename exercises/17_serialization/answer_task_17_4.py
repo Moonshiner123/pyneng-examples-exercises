@@ -40,10 +40,8 @@ C-3PO,c3po@gmail.com,16/12/2019 17:24
 Функции convert_str_to_datetime и convert_datetime_to_str использовать не обязательно.
 
 """
-
-import datetime
 import csv
-from pprint import pprint
+import datetime
 
 
 def convert_str_to_datetime(datetime_str):
@@ -58,56 +56,24 @@ def convert_datetime_to_str(datetime_obj):
     Конвертирует строку с датой в формате 11/10/2019 14:05 в объект datetime.
     """
     return datetime.datetime.strftime(datetime_obj, "%d/%m/%Y %H:%M")
-    
 
-def write_last_log_to_csv(source_log, output=None): 
-    '''
-    Сначала преобразуем данные из csv в список.
-    '''
-    log_list = []
+
+def write_last_log_to_csv(source_log, output):
     with open(source_log) as f:
-        reader = csv.reader(f)
-        headers = next(reader)
-        for row in reader:
-            log_list.append(row)
-    sorted_by_mail = sorted(log_list, key=lambda x: x[1])
-    '''
-    Затем отсортируем список по имейлу и превратим его в словарь (Чтобы для key=email более новые значения date+name перезаписывали предыдущие).
-    '''
-    sorted_dict = {}
-    prev_name,prev_mail,prev_date = sorted_by_mail[0]
-    for log in sorted_by_mail:
-        #print(log)
-        name, mail, date = log
-        if mail == prev_mail:
-            #print('prev_date: ' + str(convert_str_to_datetime(prev_date)))
-            #print('curr_date: ' + str(convert_str_to_datetime(date)))
-            if convert_str_to_datetime(date)>=convert_str_to_datetime(prev_date):
-                sorted_dict.update({mail: [name, date]})
-                prev_name,prev_date = name,date
-                #pprint(sorted_dict)l
-        else:
-            sorted_dict.update({mail: [name, date]})
-            #pprint(sorted_dict)
-        prev_mail = mail
-        #print('='*40)
-    '''
-    Наконец, преобразуем данные в первоначальный вид и в CSV-форматд
-    ''' 
-    final_list = []
-    for key, value in sorted_dict.items():  
-        final_list.append([value[0], key, value[1]])
-    with open(output, 'w') as f:
-        writer = csv.writer(f)
-        writer.writerow(headers)
-        for row in final_list:
+        data = list(csv.reader(f))
+        header = data[0]
+    result = {}
+    sorted_by_date = sorted(
+        data[1:], key=lambda x: convert_str_to_datetime(x[2])
+    )
+    for name, email, date in sorted_by_date:
+        result[email] = (name, email, date)
+    with open(output, "w") as dest:
+        writer = csv.writer(dest)
+        writer.writerow(header)
+        for row in result.values():
             writer.writerow(row)
 
 
-
-
 if __name__ == "__main__":
-    write_last_log_to_csv('mail_log.csv', 'output.csv')
-    with open('output.csv') as f:
-        print(f.read())
-
+    write_last_log_to_csv("mail_log.csv", "example_result.csv")

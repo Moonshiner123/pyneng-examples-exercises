@@ -43,29 +43,23 @@
 > pip install graphviz
 
 """
-import glob
-import re
-from pprint import pprint
 import yaml
 from draw_network_graph import draw_topology
 
-def transform_topology(yaml_topology):
-    transform_dict = {}
-    with open(yaml_topology) as f:
-        topology = yaml.safe_load(f)
-    for outer_key, outer_value in topology.items():
-        for middle_key, middle_value in outer_value.items():
-            for inner_key, inner_value in middle_value.items():
-                #print(transform_dict.get((inner_key, inner_value)))
-                if transform_dict.get((inner_key, inner_value)) != (outer_key, middle_key):
-                    transform_dict.update({(outer_key, middle_key): (inner_key, inner_value)})
-    return transform_dict
 
- 
+def transform_topology(topology_filename):
+    with open(topology_filename) as f:
+        raw_topology = yaml.safe_load(f)
+
+    formatted_topology = {}
+    for l_device, peer in raw_topology.items():
+        for l_int, remote in peer.items():
+            r_device, r_int = list(remote.items())[0]
+            if not (r_device, r_int) in formatted_topology:
+                formatted_topology[(l_device, l_int)] = (r_device, r_int)
+    return formatted_topology
 
 
 if __name__ == "__main__":
-    #transform_topology('topology.yaml')
-    pprint(transform_topology('topology.yaml'))
-    draw_topology(transform_topology('topology.yaml'))
-
+    formatted_topology = transform_topology("topology.yaml")
+    draw_topology(formatted_topology)
