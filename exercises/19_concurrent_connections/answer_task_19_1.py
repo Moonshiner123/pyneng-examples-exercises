@@ -23,62 +23,28 @@
 а затем запустить эту функцию в разных потоках для разных
 IP-адресов с помощью concurrent.futures (это надо сделать в функции ping_ip_addresses).
 """
-
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
-import logging
-from datetime import datetime
-import time
-
-start_time = datetime.now()
 
 
+def ping_ip(ip):
+    result = subprocess.run(["ping", "-c", "3", "-n", ip], stdout=subprocess.DEVNULL)
+    ip_is_reachable = result.returncode == 0
+    return ip_is_reachable
 
-logging.basicConfig(
-    format='%(threadName)s %(name)s %(levelname)s: %(message)s',
-    level=logging.INFO)
-    
 
-def ping_ip(ip_address):
-    '''
-    Ping one IP
-    '''
-    reply = subprocess.run(['ping', '-c', '3', '-n', ip_address],
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE,
-                           encoding='utf-8')
-    if reply.returncode == 0:
-        return True
-    else:
-        return False
-        
-        
 def ping_ip_addresses(ip_list, limit=3):
-    '''
-    Ping multiple IPs in multiple threads
-    '''
-    good = []
-    bad = []
-    logging.info("Starting pinging of devices from your list, please wait...")
-    logging.info(f'Using {limit} workers')
+    reachable = []
+    unreachable = []
     with ThreadPoolExecutor(max_workers=limit) as executor:
-        future_list = []
-        for ip in ip_list:
-            future = executor.submit(ping_ip, ip)
-            future_list.append(future)
-        for ip, f in zip(ip_list,future_list):
-            #print(f'IP: {ip}, Result: {f.result()}')
-            if f.result() == True:
-                good.append(ip)
-            else:
-                bad.append(ip)
-        return good, bad
-            
-        
+        results = executor.map(ping_ip, ip_list)
+    for ip, status in zip(ip_list, results):
+        if status:
+            reachable.append(ip)
+        else:
+            unreachable.append(ip)
+    return reachable, unreachable
+
 
 if __name__ == "__main__":
-    ip_list = ["a", "4.4.4.4", "8.8.4.4", "123.234.345.456", "123", "456", "789"]
-    print(ping_ip_addresses(ip_list, limit=10))
-    print(f'Время выполнения скрипта: {datetime.now() - start_time}')
-
-
+    print(ping_ip_addresses(["8.8.8.8", "192.168.100.22", "192.168.100.1"]))

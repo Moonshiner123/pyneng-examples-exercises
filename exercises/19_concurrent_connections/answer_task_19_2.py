@@ -34,62 +34,31 @@ Ethernet0/1                unassigned      YES NVRAM  administratively down down
 
 Проверить работу функции на устройствах из файла devices.yaml
 """
+from itertools import repeat
+from concurrent.futures import ThreadPoolExecutor
 
-
-
-import subprocess
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import logging
-from datetime import datetime
-import time
+from netmiko import ConnectHandler
 import yaml
-from netmiko import (
-    ConnectHandler,
-    NetmikoTimeoutException,
-    NetmikoAuthenticationException,
-)
-start_time = datetime.now()
 
 
+def send_show_command(device, command):
+    with ConnectHandler(**device) as ssh:
+        ssh.enable()
+        result = ssh.send_command(command)
+        prompt = ssh.find_prompt()
+    return f"{prompt}{command}\n{result}\n"
 
-logging.basicConfig(
-    format='%(threadName)s %(name)s %(levelname)s: %(message)s',
-    level=logging.INFO)
-    
 
-def send_show(command, device):
-    try:
-        with ConnectHandler(**device) as ssh:
-            ssh.enable()
-            prompt = ssh.find_prompt()
-            output = prompt + ssh.send_command(command, strip_command=False) + '\n'
-        return output
-    except (NetmikoTimeoutException, NetmikoAuthenticationException) as error:
-        print(error)
-        
-        
 def send_show_command_to_devices(devices, command, filename, limit=3):
+    with ThreadPoolExecutor(max_workers=limit) as executor:
+        results = executor.map(send_show_command, devices, repeat(command))
+        with open(filename, "w") as f:
+            for output in results:
+                f.write(output)
 
-    logging.info(f'Sending {command} command devices from your list, please wait...')
-    logging.info(f'Using {limit} workers')
-    with open(filename, "w") as destination_file:
-        with ThreadPoolExecutor(max_workers=limit) as executor:
-            future_list = []
-            for device in devices:
-                logging.info(f'Quering {device["host"]}')
-                future = executor.submit(send_show, command, device)
-                future_list.append(future)
-            for f in as_completed(future_list):
-                #print(f.result())
-                logging.info(f'Writing to file: {f.result()}')
-                destination_file.write(f.result())
-            
-        
 
 if __name__ == "__main__":
-    with open("devices.yaml") as dev:
-        devices = yaml.safe_load(dev)
-    send_show_command_to_devices(devices, "sh ip int b", "my_test_file")
-    print(f'Время выполнения скрипта: {datetime.now() - start_time}')
-
-
+    command = "sh ip int br"
+    with open("devices.yaml") as f:
+        devices = yaml.safe_load(f)
+    send_show_command_to_devices(devices, command, "result.txt")
