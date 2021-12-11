@@ -70,7 +70,7 @@ def send_show(command, device):
         
 def send_show_command_to_devices(devices, command, filename, limit=3):
 
-    logging.info(f'Sending {command} command devices from your list, please wait...')
+    logging.info(f'Sending {command} command to devices from your list, please wait...')
     logging.info(f'Using {limit} workers')
     with open(filename, "w") as destination_file:
         with ThreadPoolExecutor(max_workers=limit) as executor:

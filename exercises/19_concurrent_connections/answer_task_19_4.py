@@ -105,92 +105,44 @@ R3#
 
 Для выполнения задания можно создавать любые дополнительные функции.
 """
-
-
-from pprint import pprint
+from itertools import repeat
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import logging
-from datetime import datetime
-import time
+
+from netmiko import ConnectHandler, NetMikoTimeoutException
 import yaml
-from netmiko import (
-    ConnectHandler,
-    NetmikoTimeoutException,
-    NetmikoAuthenticationException,
-)
-start_time = datetime.now()
 
 
-
-logging.basicConfig(
-    format='%(threadName)s %(name)s %(levelname)s: %(message)s',
-    level=logging.INFO)
-    
-
-def send_show(command_list, device):
-    show_output_list = []
-    try:
-        with ConnectHandler(**device) as ssh:
-            ssh.enable()
-            prompt = ssh.find_prompt()
-            for command in command_list:
-                output = ssh.send_command(command, strip_command=False) 
-                result = prompt + output + '\n'
-                show_output_list.append(result)
-        return show_output_list
-    except (NetmikoTimeoutException, NetmikoAuthenticationException) as error:
-        print(error)
+def send_show_command(device, command):
+    with ConnectHandler(**device) as ssh:
+        ssh.enable()
+        result = ssh.send_command(command)
+        prompt = ssh.find_prompt()
+    return f"{prompt}{command}\n{result}\n"
 
 
-def send_config(command_list, device):
-    conf_output_list = []
-    try:
-        with ConnectHandler(**device) as ssh:
-            ssh.enable()
-            prompt = ssh.find_prompt()
-            for command in command_list:
-                output = ssh.send_config_set(command, strip_command=False) 
-                result = prompt + output + '\n'
-                conf_output_list.append(result)
-        return conf_output_list
-    except (NetmikoTimeoutException, NetmikoAuthenticationException) as error:
-        print(error)
-        
-        
+def send_cfg_commands(device, commands):
+    with ConnectHandler(**device) as ssh:
+        ssh.enable()
+        result = ssh.send_config_set(commands)
+    return f"{result}\n"
+
+
 def send_commands_to_devices(devices, filename, *, show=None, config=None, limit=3):
-    with open(filename, "w") as destination_file:
-        logging.info(f'Sending commands to devices from your list, please wait...')
-        logging.info(f'Using {limit} workers')
-        
-        if show and  config:
-            raise ValueError('Функция работает только с одним типом команд (show/config)')
-        elif show:
-            function = send_show
-            commands = show
-        elif config:
-            function = send_config
-            commands = config
-            
-        if type(commands) == str:
-            commands = [commands]
-            
-        with ThreadPoolExecutor(max_workers=limit) as executor:
-                future_list = []
-                for device in devices:
-                    logging.info(f'Quering {device["host"]}')
-                    future = executor.submit(function, commands, device)
-                    future_list.append(future)
-                for f in as_completed(future_list):
-                    #print(f.result())
-                    logging.info(f'Writing to file: {f.result()}')
-                    destination_file.write("".join(f.result()))
-        
-            
-            
-        
+    if show and config:
+        raise ValueError("Можно передавать только один из аргументов show/config")
+    command = show if show else config
+    function = send_show_command if show else send_cfg_commands
+
+    with ThreadPoolExecutor(max_workers=limit) as executor:
+        futures = [executor.submit(function, device, command) for device in devices]
+        with open(filename, "w") as f:
+            for future in as_completed(futures):
+                f.write(future.result())
+
 
 if __name__ == "__main__":
-    with open("devices.yaml") as dev:
-        devices = yaml.safe_load(dev)
-    send_commands_to_devices(devices, "my_test_file_19.4", show=["show ver", "sh clock"])
-    print(f'Время выполнения скрипта: {datetime.now() - start_time}')
+    command = "sh ip int br"
+    with open("devices.yaml") as f:
+        devices = yaml.load(f)
+    send_commands_to_devices(devices, show=command, filename="result.txt")
+    send_commands_to_devices(devices, config="logging 10.5.5.5", filename="result.txt")
