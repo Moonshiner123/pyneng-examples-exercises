@@ -1,0 +1,3 @@
+{% include 'templates/cisco_base.txt' %}
+{% include 'templates/alias.txt' %}
+{% include 'templates/eem_int_desc.txt' %}

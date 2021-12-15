@@ -35,3 +35,25 @@ data = {
     "tun_ip_1": "10.0.1.1 255.255.255.252",
     "tun_ip_2": "10.0.1.2 255.255.255.252",
 }
+
+import os
+import yaml
+from jinja2 import Environment, FileSystemLoader
+
+
+def create_vpn_config(template1, template2, data_dict):
+    templ_dir, templ_file = os.path.split(template)
+    env = Environment(
+        loader=FileSystemLoader(templ_dir), trim_blocks=True, lstrip_blocks=True
+    )
+    templ = env.get_template(templ_file)
+    return templ.render(data_dict)
+
+
+# так должен выглядеть вызов функции
+if __name__ == "__main__":
+    data_file = "data_files/for.yml"
+    template_file = "templates/for.txt"
+    with open(data_file) as f:
+        data = yaml.safe_load(f)
+    print(generate_config(template_file, data))
