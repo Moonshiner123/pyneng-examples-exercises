@@ -27,6 +27,7 @@ cisco_vpn_1.txt и cisco_vpn_2.txt.
 Примеры конфигураций VPN, которые должна возвращать функция create_vpn_config в файлах
 cisco_vpn_1.txt и cisco_vpn_2.txt.
 """
+from task_20_1 import generate_config
 
 data = {
     "tun_num": 10,
@@ -36,38 +37,16 @@ data = {
     "tun_ip_2": "10.0.1.2 255.255.255.252",
 }
 
-import os
-import yaml
-from jinja2 import Environment, FileSystemLoader
-
 
 def create_vpn_config(template1, template2, data_dict):
-    templ_dir, templ_file = os.path.split(template1)
-    env = Environment(
-        loader=FileSystemLoader("."), trim_blocks=True, lstrip_blocks=True
-    )
-    templ1 = env.get_template(template1)
-    templ2 = env.get_template(template2)
-    return templ1.render(data_dict), templ2.render(data_dict)
+    cfg1 = generate_config(template1, data_dict)
+    cfg2 = generate_config(template2, data_dict)
+    return cfg1, cfg2
 
 
-# так должен выглядеть вызов функции
 if __name__ == "__main__":
-    data_file = "data_files/gre_ipsec_vpn.yml"
     template1 = "templates/gre_ipsec_vpn_1.txt"
     template2 = "templates/gre_ipsec_vpn_2.txt"
-    with open(data_file) as f:
-        data = yaml.safe_load(f)
-    config = create_vpn_config(template1, template2, data)
-    print(f'''
-R1
-{"#"*40}
-{config[0]}
-{"#"*40}
-            
-R2
-{"#"*40}
-{config[1]}
-{"#"*40}
-'''
-    )
+    vpn1, vpn2 = create_vpn_config(template1, template2, data)
+    print(vpn1)
+    print(vpn2)

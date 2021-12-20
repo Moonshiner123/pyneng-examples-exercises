@@ -37,91 +37,55 @@
 интерфейсов, но при этом не проверяет настроенные номера тунелей и другие команды.
 Они должны быть, но тест упрощен, чтобы было больше свободы выполнения.
 """
-
-from netmiko import ConnectHandler, NetMikoTimeoutException
-import yaml
 import re
-import os
-from jinja2 import Environment, FileSystemLoader
-#from task_20_1 import generate_config
+
+import yaml
+from netmiko import ConnectHandler
 from task_20_5 import create_vpn_config
 
-data = {}
 
-def send_show_command(device, command):
-    with ConnectHandler(**device) as ssh:
-        ssh.enable()
-        result = ssh.send_command(command)
-        prompt = ssh.find_prompt()
-    return f"{prompt}{command}\n{result}\n"
-    
-    
-def send_cfg_commands(device, commands):
-    with ConnectHandler(**device) as ssh:
-        ssh.enable()
-        result = ssh.send_config_set(commands)
-    return f"{result}\n"
+def get_free_tunnel_number(src, dst):
+    nums = [int(num) for num in re.findall(r"Tunnel(\d+)", src + dst)]
+    if not nums:
+        return 0
+    diff = set(range(min(nums), max(nums) + 1)) - set(nums)
+    if diff:
+        return min(diff)
+    else:
+        return max(nums) + 1
 
 
-def configure_vpn(src_device_params, dst_device_params, src_template, dst_template, vpn_data_dict):
-    '''
-    Extracting list of all configured tun_id's on both ends
-    '''
-    print("Extracting list of all configured tun_id's on both ends")
-    regex = r'Tunnel(?P<tun_id>\d+)'
-    show1_tun_id_list = []
-    show2_tun_id_list = []
-    show1 = send_show_command(src_device_params, "sh ip int b")
-    show2 = send_show_command(dst_device_params, "sh ip int b")
-    match1 = re.finditer(regex, show1)
-    match2 = re.finditer(regex, show2)
-    show1_tun_id_list = [int(m.group("tun_id")) for m in match1]
-    show2_tun_id_list = [int(n.group("tun_id")) for n in match2]
-    tun_id_set = set(show1_tun_id_list) | set(show2_tun_id_list)
-    '''
-    Finding out which tun_id is free
-    '''
-    print('Finding out which tun_id is free')
-    tun_id_list = list(tun_id_set)
-    max_id = tun_id_list[-1] + 2
-    for i in range(max_id):
-        if  not i in tun_id_list:
-            tunnel_id = i
-            break
-    '''
-    Generating configs
-    ''' 
-    print('Generating configs')
-    vpn_data_dict["tun_num"] = tunnel_id
-    config1, config2 = create_vpn_config(src_template, dst_template, vpn_data_dict)
-   
-    '''
-    Applying config
-    '''
-    print('Applying configs')
-    applied_config_1 = send_cfg_commands(src_device_params, config1.split("\n"))
-    applied_config_2 = send_cfg_commands(dst_device_params, config2.split("\n"))
-    return applied_config_1, applied_config_2
-    
+def configure_vpn(
+    src_device_params, dst_device_params, src_template, dst_template, vpn_data_dict
+):
+    with ConnectHandler(**src_device_params) as src, ConnectHandler(
+        **dst_device_params
+    ) as dst:
+        src.enable()
+        dst.enable()
+        tunnels_src = src.send_command("sh run | include ^interface Tunnel")
+        tunnels_dst = dst.send_command("sh run | include ^interface Tunnel")
+        tun_num = get_free_tunnel_number(tunnels_src, tunnels_dst)
+        vpn_data_dict["tun_num"] = tun_num
+        vpn1, vpn2 = create_vpn_config(src_template, dst_template, vpn_data_dict)
+        output1 = src.send_config_set(vpn1.split("\n"))
+        output2 = dst.send_config_set(vpn2.split("\n"))
+    return output1, output2
 
-    
 
 if __name__ == "__main__":
-    data = {
-    "tun_num": None,
-    "wan_ip_1": "192.168.100.1",
-    "wan_ip_2": "192.168.100.2",
-    "tun_ip_1": "10.0.1.1 255.255.255.252",
-    "tun_ip_2": "10.0.1.2 255.255.255.252"}
-    
-    with open("devices.yaml") as f:
-        devices = yaml.safe_load(f)
-    #src_device_params = devices[0]
-    #dst_device_params = devices[1]
-    #data_file = "data_files/gre_ipsec_vpn.yml"
     template1 = "templates/gre_ipsec_vpn_1.txt"
     template2 = "templates/gre_ipsec_vpn_2.txt"
-    result1, result2 = configure_vpn(devices[0], devices[1], template1, template2, data)
-    print(result1)
-    print(result2)
-    
+
+    data = {
+        "tun_num": None,
+        "wan_ip_1": "192.168.100.1",
+        "wan_ip_2": "192.168.100.2",
+        "tun_ip_1": "10.0.1.1 255.255.255.252",
+        "tun_ip_2": "10.0.1.2 255.255.255.252",
+    }
+
+    with open("devices.yaml") as f:
+        devices = yaml.safe_load(f)
+        r1, r2 = devices[:2]
+    configure_vpn(r1, r2, template1, template2, data)
