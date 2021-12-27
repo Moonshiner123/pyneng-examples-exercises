@@ -38,42 +38,27 @@
 Проверить работу функции на примере вывода команды sh ip int br
 и устройствах из devices.yaml.
 """
-
-import re
-import yaml
-from textfsm import clitable
-from tabulate import tabulate
-from pprint import pprint
-from netmiko import ConnectHandler, NetMikoTimeoutException, NetmikoAuthenticationException
 from task_21_4 import send_and_parse_show_command
-import logging
-from datetime import datetime
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pprint import pprint
+import os
+import yaml
 
-start_time = datetime.now()
 
-
-logging.basicConfig(
-    format='%(threadName)s %(name)s %(levelname)s: %(message)s',
-    level=logging.INFO)
-    
 def send_and_parse_command_parallel(devices, command, templates_path, limit=3):
-    final_dict = {}
-    future_list = []
-    device_list = []
     with ThreadPoolExecutor(max_workers=limit) as executor:
-        for device in devices:
-            logging.info(f'Quering {device["host"]}')
-            future = executor.submit(send_and_parse_show_command, device, command, templates_path)
-            future_list.append(future)
-            device_list.append(device['host'])
-        for d,f in zip(device_list,future_list):
-            final_dict[d] = f.result()
-    return final_dict
+        result_all = [
+            executor.submit(send_and_parse_show_command, device, command, templates_path)
+            for device in devices
+        ]
+        output = {device["host"]: f.result() for device, f in zip(devices, result_all)}
+    return output
+
 
 if __name__ == "__main__":
-    with open("devices.yaml") as dev:
-        devices = yaml.safe_load(dev)
-    pprint(send_and_parse_command_parallel(devices, 'sh ip int br', 'templates'))
-    print(f'Время выполнения скрипта: {datetime.now() - start_time}')
+    with open("devices.yaml") as f:
+        devices = yaml.safe_load(f)
+    command = "sh ip int br"
+    path_dir = f"{os.getcwd()}/templates"
+    pprint(send_and_parse_command_parallel(devices, command, path_dir))
+

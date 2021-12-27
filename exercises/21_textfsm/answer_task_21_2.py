@@ -15,24 +15,23 @@
 
 Проверить работу шаблона с помощью функции parse_command_output из задания 21.1.
 """
-
-
-from tabulate import tabulate
-from task_21_1 import parse_command_output
-import re
+from task_22_1 import parse_command_output
 
 
 if __name__ == "__main__":
-    regex = r'(\S+) +(\S+) +\S+ +\S+ +(\d+) +(\S+)'
-    regex1 = r'(\S+) +(\S+) +\S+ +\S+ +(\d+) +(\S+)'
-    output = "output/sh_ip_dhcp_snooping.txt"
-    template = "templates/sh_ip_dhcp_snooping.template"
-    with open(output) as f, open(template) as t:
-        #match = re.finditer(regex1, f.read())
-        #list1 = [m.groups() for m in match]
-        #print(list1)
-        #print(f.read())
-        result = parse_command_output("templates/sh_ip_dhcp_snooping.template", f.read())
+    with open("output/sh_ip_dhcp_snooping.txt") as show:
+        output = show.read()
+    result = parse_command_output("templates/sh_ip_dhcp_snooping.template", output)
     print(result)
-    print(tabulate(result))
 
+# templates/sh_ip_dhcp_snooping.template
+"""
+Value mac (\S+)
+Value ip (\S+)
+Value vlan (\d+)
+Value intf (\S+)
+
+
+Start
+  ^${mac}\s+${ip}\s+\d+\s+\S+\s+${vlan}\s+${intf} -> Record
+"""

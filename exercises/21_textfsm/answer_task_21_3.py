@@ -20,36 +20,22 @@
 
 Проверить работу функции на примере вывода команды sh ip int br.
 """
-
-
-import re
 from textfsm import clitable
-from tabulate import tabulate
 from pprint import pprint
 
 
+def parse_command_dynamic(
+    command_output, attributes_dict, index_file="index", templ_path="templates"
+):
 
-def parse_command_dynamic(command_output, attributes_dict, index_file='index', templ_path='templates'):
-    result = []
     cli_table = clitable.CliTable(index_file, templ_path)
     cli_table.ParseCmd(command_output, attributes_dict)
-    header = list(cli_table.header)
-    data_rows = [list(row) for row in cli_table]
-    for row in data_rows:
-        dict_element = dict(zip(header, row))
-        result.append(dict_element)
-    return result
+    return [dict(zip(cli_table.header, row)) for row in cli_table]
+
 
 if __name__ == "__main__":
-    output = 'output/sh_ip_int_br.txt'
-    
-    with open(output) as f:
-        out=f.read()
-        regex = r'\S+[#>](?P<command>.+)\n'
-        match = re.search(regex, out)
-        command = match.group('command')
-        #print(command)
-        attributes = {'Command': command, 'Vendor': 'cisco_ios'}
-        pprint(parse_command_dynamic(out, attributes))
-        print(tabulate(parse_command_dynamic(out, attributes)))
-
+    attributes = {"Command": "show ip int br", "Vendor": "cisco_ios"}
+    with open("output/sh_ip_int_br.txt") as f:
+        command_output = f.read()
+    result = parse_command_dynamic(command_output, attributes)
+    pprint(result, width=100)

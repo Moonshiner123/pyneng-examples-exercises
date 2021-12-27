@@ -21,33 +21,52 @@
 Проверить работу функции на примере вывода команды sh ip int br
 и устройствах из devices.yaml.
 """
-
-
-import re
-import yaml
-from textfsm import clitable
-from tabulate import tabulate
+import os
 from pprint import pprint
-from netmiko import ConnectHandler, NetMikoTimeoutException
+from netmiko import ConnectHandler
+import yaml
+
+
+def send_and_parse_show_command(device_dict, command, templates_path):
+    if "NET_TEXTFSM" not in os.environ:
+        os.environ["NET_TEXTFSM"] = templates_path
+    with ConnectHandler(**device_dict) as ssh:
+        ssh.enable()
+        output = ssh.send_command(command, use_textfsm=True)
+    return output
+
+
+if __name__ == "__main__":
+    full_pth = os.path.join(os.getcwd(), "templates")
+    with open("devices.yaml") as f:
+        devices = yaml.safe_load(f)
+    for dev in devices:
+        result = send_and_parse_show_command(
+            dev, "sh ip int br", templates_path=full_pth
+        )
+        pprint(result, width=120)
+
+# Второй вариант без использования use_textfsm в netmiko
+from task_21_3 import parse_command_dynamic
 
 
 def send_and_parse_show_command(device_dict, command, templates_path, index="index"):
-    result = []
+    attributes = {"Command": command, "Vendor": device_dict["device_type"]}
     with ConnectHandler(**device_dict) as ssh:
         ssh.enable()
-        command_output = ssh.send_command(command)
-        
-    cli_table = clitable.CliTable(index, templates_path)
-    attributes = {'Command': command, 'Vendor': 'cisco_ios'}
-    cli_table.ParseCmd(command_output, attributes)
-    header = list(cli_table.header)
-    data_rows = [list(row) for row in cli_table]
-    result = [dict(zip(header, row)) for row in data_rows]
-    return result
+        output = ssh.send_command(command)
+        parsed_data = parse_command_dynamic(
+            output, attributes, templ_path=templates_path, index_file=index
+        )
+    return parsed_data
+
 
 if __name__ == "__main__":
-    with open("devices.yaml") as dev:
-        devices = yaml.safe_load(dev)
-    for device in devices:
-        pprint(send_and_parse_show_command(device, 'sh ip int br', 'templates'))
-        print(tabulate(send_and_parse_show_command(device, 'sh ip int br', 'templates')))
+    full_pth = os.path.join(os.getcwd(), "templates")
+    with open("devices.yaml") as f:
+        devices = yaml.safe_load(f)
+    for dev in devices:
+        result = send_and_parse_show_command(
+            dev, "sh ip int br", templates_path=full_pth
+        )
+        pprint(result, width=120)
