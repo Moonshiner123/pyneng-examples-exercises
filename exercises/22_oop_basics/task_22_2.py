@@ -47,3 +47,28 @@ self._write_line(line)
 
 Он не должен делать ничего другого.
 """
+
+class CiscoTelnet:
+    
+    import telnetlib
+    import time
+    from pprint import pprint
+
+    def __init__(self, ip, username, password, secret):
+        self.ip, self.username, self.password, self.secret = ip, username, password, secret
+        with telnetlib.Telnet(self.ip) as telnet:
+            telnet.read_until(b"Username")
+            telnet._write_line(self.username)
+            telnet.read_until(b"Password")
+            telnet._write_line(self.password)
+            index, m, output = telnet.expect([b">", b"#"])
+            if index == 0:
+                telnet._write_line(b"enable\n")
+                telnet.read_until(b"Password")
+                telnet._write_line(self.secret)
+                telnet.read_until(b"#", timeout=5)
+            telnet._write_line(b"terminal length 0\n")
+            telnet.read_until(b"#", timeout=5)
+        
+    def _write_line(self, line):
+        return f"{line}\n".encode("utf-8")

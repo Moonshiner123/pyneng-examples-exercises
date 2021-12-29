@@ -15,11 +15,11 @@ class Topology:
         self.topology = self._normalize(topology_dict)
         
     def _normalize(self, topology_dict):
-        self.topology = {}
+        topo = {}
         for key, value in topology_dict.items():
-            if not self.topology.get(value) == key:
-                self.topology[key] = value
-
+            if not topo.get(value) == key:
+                topo[key] = value
+        return topo
 
 
 if __name__ == "__main__":
