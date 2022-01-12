@@ -63,97 +63,81 @@ ValueError                                Traceback (most recent call last)
 ValueError: При выполнении команды "logging 0255.255.1" на устройстве 192.168.100.1 возникла ошибка -> Invalid input detected at '^' marker.
 
 """
-
-
-import telnetlib
 import time
-from pprint import pprint
-import re
+import telnetlib
 import yaml
 from textfsm import clitable
-from tabulate import tabulate
-    
-class CiscoTelnet:
+import re
 
+
+class CiscoTelnet:
     def __init__(self, ip, username, password, secret):
         self.ip = ip
         self.telnet = telnetlib.Telnet(ip)
-        self.telnet.read_until(b"Username")
+        self.telnet.read_until(b"Username:")
         self._write_line(username)
-        #print('Entered username')
-        self.telnet.read_until(b"Password")
+        self.telnet.read_until(b"Password:")
         self._write_line(password)
-        #print('Entered password')
-        index, m, output = self.telnet.expect([b">", b"#"])
-        if index == 0:
-            self._write_line("enable")
-            #print('Entered enable')
-            self.telnet.read_until(b"Password")
-            self._write_line(secret)
-            #print('Entered enable secret')
-            self.telnet.read_until(b"#", timeout=5)
+        self._write_line("enable")
+        self.telnet.read_until(b"Password:")
+        self._write_line(secret)
         self._write_line("terminal length 0")
-        #print('Entered terminal length 0')
         time.sleep(1)
         self.telnet.read_very_eager()
 
-        
     def _write_line(self, line):
-        return self.telnet.write(line.encode("ascii") + b"\n")
-        
-    def send_show_command(self, line, parse=True, templates="templates", index="index"):
-        self._write_line(line)
-        #print(f"Send command: {line}")
+        self.telnet.write(line.encode("ascii") + b"\n")
+
+    def send_show_command(self, command, parse=True, templates="templates"):
+        self._write_line(command)
         time.sleep(1)
-        output = self.telnet.read_very_eager().decode("ascii")
-        if parse == False:
-            return output
-        else:
-            cli_table = clitable.CliTable(index, templates)
-            attributes = {'Command': line, 'Vendor': 'cisco_ios'}
-            cli_table.ParseCmd(output, attributes)
-            header = list(cli_table.header)
-            data_rows = [list(row) for row in cli_table]
-            result = [dict(zip(header, row)) for row in data_rows]
-            return result
-            
-    def send_config_commands(self, cfg, strict=True):
-        full_output = []
-        if type(cfg) == str:
-            cfg = [cfg]
+        command_output = self.telnet.read_very_eager().decode("ascii")
+        if not parse:
+            return command_output
+        attributes = {"Command": command, "Vendor": "cisco_ios"}
+        cli = clitable.CliTable("index", templates)
+        cli.ParseCmd(command_output, attributes)
+        return [dict(zip(cli.header, row)) for row in cli]
+
+    def _error_in_command(self, command, result, strict):
+        regex = "% (?P<err>.+)"
+        template = (
+            'При выполнении команды "{cmd}" на устройстве {device} '
+            "возникла ошибка -> {error}"
+        )
+        error_in_cmd = re.search(regex, result)
+        if error_in_cmd:
+            message = template.format(
+                cmd=command, device=self.ip, error=error_in_cmd.group("err")
+            )
+            if strict:
+                raise ValueError(message)
+            else:
+                print(message)
+
+    def send_config_commands(self, commands, strict=True):
+        output = ""
+        if isinstance(commands, str):
+            commands = [commands]
         self._write_line("conf t")
-        #print(f"Send command: conf t")
-        time.sleep(1)
-        for command in cfg:
-            #print(f"Send command: {command}")
+        for command in commands:
             self._write_line(command)
             time.sleep(1)
-            output = self.telnet.read_very_eager().decode("ascii")
-            if "%" in output:
-                regex = r'% (.*)\n'
-                match = re.search(regex, output).group(1)
-                if strict == True:
-                    raise ValueError(f'При выполнении команды "{command}" на устройстве {self.ip} возникла ошибка -> {match}')
-                else:
-                    print(f'При выполнении команды "{command}" на устройстве {self.ip} возникла ошибка -> {match}')
-            full_output.append(output)
+            result = self.telnet.read_very_eager().decode("ascii")
+            output += result
+            self._error_in_command(command, result, strict=strict)
         self._write_line("end")
         time.sleep(1)
-        full_output.append(self.telnet.read_very_eager().decode("ascii"))
-        return "".join(full_output)
+        output += self.telnet.read_very_eager().decode("ascii")
+        return output
 
-            
 
 if __name__ == "__main__":
-
     r1_params = {
-    'ip': '192.168.100.1',
-    'username': 'cisco',
-    'password': 'cisco',
-    'secret': 'cisco'}
+        "ip": "192.168.100.1",
+        "username": "cisco",
+        "password": "cisco",
+        "secret": "cisco",
+    }
     r1 = CiscoTelnet(**r1_params)
-    commands_with_errors = ['logging 0255.255.1', 'logging', 'a']
-    correct_commands = ['logging buffered 20010', 'ip http server']
-    commands = commands_with_errors+correct_commands
     print(r1.send_config_commands(commands, strict=False))
-    #print(r1.send_config_commands(commands, strict=True))
