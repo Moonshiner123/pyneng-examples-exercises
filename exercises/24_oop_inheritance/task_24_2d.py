@@ -53,12 +53,22 @@ class MyNetmiko(CiscoIosSSH):
         self._check_error_in_command(command, output)
         return output
         
-    def send_config_set(self, command, ignore_errors=True):
-        if isinstance(command, str):
-            command = [command]
-        output = super().send_config_set(command)
-        if not ignore_errors:
-            self._check_error_in_command(command, output)
+    def send_config_set(self, commands, ignore_errors=True):
+        if isinstance(commands, str):
+            commands = [commands]
+        if ignore_errors:
+            output = super().send_config_set(commands)
+        else:
+            output = ""
+            self.config_mode() 
+            for command in commands:
+                #self._check_error_in_command(command, output)
+                output += self.send_command(command)
+                print(output)
+            self.exit_config_mode()
+        return output
+                
+                
         return output 
             
     def _check_error_in_command(self, command, output):
@@ -84,5 +94,5 @@ if __name__ == "__main__":
     #print('\nПравильная команда')
     #print(r1.send_command('sh ip int br', strip_command=False))
     #print(r1.send_config_set(['interface tun50', 'ip address 10.5.5.8 255.255.255.255']))
-    print(r1.send_config_set('logging 0255.255.1', ignore_errors=False))
+    print(r1.send_config_set(['logging on', 'logging 0255.255.1', 'interface qwe'], ignore_errors=False))
     
