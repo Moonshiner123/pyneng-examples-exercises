@@ -26,7 +26,12 @@ else:
     query = query_dict[key]
     result = conn.execute(query, (value, ))
 
-    for row in result:
-        for row_name in row.keys():
-            print('{:12}: {}'.format(row_name, row[row_name]))
-        print('-' * 40)
+print(type(result))
+
+for row in result:
+    print(type(row))
+    print(row.keys())
+    print(row[0], row[1], row[2])
+    for row_name in row.keys():
+        print('{:12}: {}'.format(row_name, row[row_name]))
+    print('-' * 40)

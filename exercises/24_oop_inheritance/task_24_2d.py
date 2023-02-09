@@ -57,16 +57,17 @@ class MyNetmiko(CiscoIosSSH):
         if isinstance(commands, str):
             commands = [commands]
         if ignore_errors:
-            output = super().send_config_set(commands)
+            self.cfg_output = super().send_config_set(commands)
         else:
-            output = ""
+            self.cfg_output = ""
             self.config_mode() 
             for command in commands:
                 #self._check_error_in_command(command, output)
-                output += self.send_command(command)
-                print(output)
+                print(command)
+                self.cfg_output += self.send_command(command)
+                print(self.cfg_output)
             self.exit_config_mode()
-        return output
+        return self.cfg_output
                 
                 
         return output 

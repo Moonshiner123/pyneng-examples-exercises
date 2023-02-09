@@ -16,6 +16,8 @@ def create(args):
 def add(args):
     if args.sw_true:
         print('Добавляю данные о коммутаторах')
+        #print(args.db_file)
+        #print(args.filename)
         pds.add_data_switches(args.db_file, args.filename)
     else:
         print('Читаю информацию из файлов\n{}'.format(', '.join(
